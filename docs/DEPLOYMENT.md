@@ -122,14 +122,70 @@ settings are reapplied on every boot — no need to touch `rc.local`.
 **Important:** "plain" GGUF repos (without `-MTP` in the name) have the MTP
 head tensors stripped out to save space — `--spec-type draft-mtp` would have
 nothing to draft from. You must use the dedicated MTP repo:
+`unsloth/Qwen3.6-27B-MTP-GGUF`.
+
+### 5.1 Check free disk space first
+
+```bash
+df -h ~/llama-mtp-vulkan   # need more free space than the quant file size (see table below)
+```
+
+### 5.2 Pick a quantization level
+
+The `unsloth/Qwen3.6-27B-MTP-GGUF` repo offers several quant levels, trading
+file size/VRAM for quality. A few common picks (full list at
+[huggingface.co/unsloth/Qwen3.6-27B-MTP-GGUF/tree/main](https://huggingface.co/unsloth/Qwen3.6-27B-MTP-GGUF/tree/main)):
+
+| File | Size | Notes |
+|---|---|---|
+| `Qwen3.6-27B-UD-Q2_K_XL.gguf` | 12 GB | Smallest still-usable, noticeably lower quality |
+| `Qwen3.6-27B-Q3_K_M.gguf` | 13.8 GB | Balanced for lower-VRAM boxes |
+| `Qwen3.6-27B-Q4_K_M.gguf` | **17.1 GB** | **Recommended** — best speed/quality tradeoff, used throughout this guide |
+| `Qwen3.6-27B-UD-Q4_K_XL.gguf` | 17.9 GB | "Unsloth Dynamic" Q4 variant, slightly better quality than Q4_K_M |
+| `Qwen3.6-27B-Q5_K_M.gguf` | 19.8 GB | Higher quality, needs more VRAM |
+| `Qwen3.6-27B-Q8_0.gguf` | 29 GB | Near-lossless, needs a GPU with plenty of VRAM |
+
+Rule of thumb: model + KV cache (q4_0) + MTP head must all fit in GPU VRAM. On
+a 32GB R9700, `Q4_K_M` (17.1GB) leaves plenty of headroom for the large
+`--ctx-size 204800`; anything `Q5_K_M` and above may need a smaller
+`--ctx-size` if VRAM is tight.
+
+### 5.3 Download
 
 ```bash
 mkdir -p ~/llama-mtp-vulkan/models/gguf
-curl -L -o ~/llama-mtp-vulkan/models/gguf/Qwen3.6-27B-Q4_K_M.gguf \
+cd ~/llama-mtp-vulkan/models/gguf
+
+curl -L -C - -o Qwen3.6-27B-Q4_K_M.gguf \
   "https://huggingface.co/unsloth/Qwen3.6-27B-MTP-GGUF/resolve/main/Qwen3.6-27B-Q4_K_M.gguf"
 ```
 
-(repo: `unsloth/Qwen3.6-27B-MTP-GGUF`, file `Qwen3.6-27B-Q4_K_M.gguf`, ~17.1GB)
+- `-C -` enables resume if curl gets interrupted (dropped connection, SSH
+  timeout) — just re-run the same command and curl picks up where it left
+  off instead of restarting from zero.
+- For a 17GB+ file, run it in the background so it survives a lost SSH session:
+  ```bash
+  nohup curl -L -C - -o Qwen3.6-27B-Q4_K_M.gguf \
+    "https://huggingface.co/unsloth/Qwen3.6-27B-MTP-GGUF/resolve/main/Qwen3.6-27B-Q4_K_M.gguf" \
+    > download.log 2>&1 &
+  disown
+  # track progress:
+  watch -n5 'ls -la Qwen3.6-27B-Q4_K_M.gguf'
+  ```
+- Alternative if Python/pip is available: `pip install -U huggingface_hub[cli]`
+  then `huggingface-cli download unsloth/Qwen3.6-27B-MTP-GGUF Qwen3.6-27B-Q4_K_M.gguf --local-dir .`
+  (handles resume/retry automatically, no need for `-C -`).
+
+### 5.4 Verify the download is complete and correct
+
+```bash
+ls -la Qwen3.6-27B-Q4_K_M.gguf
+# compare the size against the HF page (table in 5.2) — a large mismatch means a truncated/corrupt download
+
+file Qwen3.6-27B-Q4_K_M.gguf
+# should be recognized as plain binary ("data"), not text/HTML
+# (a few-KB HTML/JSON file usually means a bad URL or a blocked request — delete and retry)
+```
 
 ---
 
