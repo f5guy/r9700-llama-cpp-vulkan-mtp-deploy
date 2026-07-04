@@ -5,14 +5,6 @@ A step-by-step guide to go from a clean Ubuntu 24.04 server to a running
 speculative decoding, packaged with Docker Compose. Validated on an AMD
 Radeon AI PRO R9700 (gfx1201).
 
-Target flags — the deployment must be able to run this:
-
-```
---n-gpu-layers 999 --ctx-size 204800 --parallel 1 --flash-attn on \
--b 16384 -ub 2048 --cache-type-k q4_0 --cache-type-v q4_0 \
---spec-type draft-mtp --spec-draft-n-max 3
-```
-
 ---
 
 ## 0. Prerequisites
