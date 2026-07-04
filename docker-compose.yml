@@ -11,7 +11,7 @@ services:
     ports:
       - "30001:8080"
     volumes:
-      - /path/to/your/models:/models  # change to your model directory
+      - /path/to/your/models:/models  # change to your model directory (/root/llama-mtp-vulkan/models/gguf/)
     devices:
       - /dev/dri:/dev/dri
     group_add:
@@ -47,7 +47,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - /path/to/your/models:/models  # change to your model directory
+      - /path/to/your/models:/models  # change to your model directory (/root/llama-mtp-vulkan/models/gguf/)
     devices:
       - /dev/dri:/dev/dri
     group_add:
