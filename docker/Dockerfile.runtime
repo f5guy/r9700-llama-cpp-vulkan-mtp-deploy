@@ -1,0 +1,10 @@
+FROM ubuntu:24.04
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libvulkan1 mesa-vulkan-drivers libssl3 libgomp1 && \
+    rm -rf /var/lib/apt/lists/*
+COPY bin/ /app/
+ENV LD_LIBRARY_PATH=/app
+ENV GGML_VK_VISIBLE_DEVICES=0
+ENV RADV_DEBUG=nocompute
+WORKDIR /app
+ENTRYPOINT ["/app/llama-server"]
